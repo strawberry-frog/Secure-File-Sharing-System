@@ -1,46 +1,109 @@
-README 
+# Secure Client-Server File Sharing System
 
-You can either run this code on the same machine or separate I have the files in folders to make it easier depending on the set up. 
+A Python client-server file sharing system built to explore secure network
+communication, authentication, certificate management, password security,
+and file transfer.
 
-Project files for same machine:
+The application uses SSL/TLS and X.509 certificates to establish secure
+communication between a client and server. Users can create accounts,
+authenticate, recover passwords, and upload or download files through the
+server.
+
+## Features
+
+- SSL/TLS encrypted client-server communication
+- X.509 certificate authentication
+- Elliptic Curve cryptographic keys
+- Locally generated Certificate Authority
+- User account creation and authentication
+- Password complexity requirements
+- Password hashing with bcrypt
+- Hidden password entry using maskpass
+- Password recovery using security questions
+- Account lockout after repeated failed recovery attempts
+- File upload and download
+- User-specific file storage
+- Multithreaded server connections
+- Input validation and authentication controls
+
+## Technologies
+
+- Python 3
+- Python sockets
+- SSL/TLS
+- OpenSSL
+- X.509 certificates
+- Elliptic Curve Cryptography
+- bcrypt
+- maskpass
+- Bash
+- Linux
+- Multithreading
+
+## Requirements
+
+This project was developed for Linux systems.
+
+Python 3 and OpenSSL are required.
+
+Create a Python virtual environment:
+
+    mkdir ~/project
+    virtualenv -p /usr/bin/python3 ~/project
+    cd ~/project
+    source bin/activate
+
+Update pip and setuptools:
+
+    pip install --upgrade pip
+    pip install --upgrade setuptools
+
+Install the server dependency:
+
+    pip install bcrypt
+
+Install the client dependency:
+
+    pip install maskpass
+
+## Project Files
+
+The project can be run with the client and server on the same Linux machine
+or on separate Linux systems.
+
+Core files include:
+
     client.py
     server.py
-    ca.key
-    ca.crt
-    server.sh
     client.sh
+    server.sh
+    ca.crt
 
-Project files for implementation on separate machines: 
-    client-Projects:
-        ca.key
-        ca.crt
-        client.sh
-        client.py
+The Bash scripts generate the cryptographic keys, certificate requests,
+certificates, and other files required by the application.
 
-    server-Projects:
-        ca.key
-        ca.crt
-        server.sh
-        server.py
+Private `.key` files are intentionally not included in the repository and
+should be generated locally.
 
-Just-In-Case files:
-    client.crt
-    client.key
-    client.pem
-    client-extensions.txt
-    server.pem
-    server.key
-    server.crt
-    server-extensions.text
+## Certificate Setup
 
-The first step is placing these into a 
+The project uses a locally created Certificate Authority and separate
+certificates for the server and client.
 
-Linux system for the server and using the command:
-    
-Ready for the certificate creation:
+### Server
+
+Run:
+
     bash server.sh
 
-You will be asked for prompts here is what I suggest:
+During certificate creation, the server certificate must use:
+
+    Common Name: Server
+    Challenge Password: cookie
+
+Other certificate information can be customized for your environment.
+
+Example:
 
     Country Name: US
     State or Province: VA
@@ -49,18 +112,22 @@ You will be asked for prompts here is what I suggest:
     Organizational Unit: Security
     Common Name: Server
     Email: your email
-    challenge Password: cookie
-    company name: Blank 
+    Challenge Password: cookie
+    Company Name: [blank]
 
+### Client
 
-The Common Name and password MUST Be those or this will not work. 
+Run:
 
-Linux system for client and using the command:
+    bash client.sh
 
-Ready for the certificate creation:
-    bash client.sh 
+During certificate creation, the client certificate must use:
 
-You will be asked for prompts here is what I suggest: 
+    Common Name: Client
+    Challenge Password: cookie
+
+Example:
+
     Country Name: US
     State or Province: VA
     Locality Name: Harrisonburg
@@ -68,273 +135,270 @@ You will be asked for prompts here is what I suggest:
     Organizational Unit: Security
     Common Name: Client
     Email: your email
-    challenge Password: cookie
-    company name: Blank 
+    Challenge Password: cookie
+    Company Name: [blank]
 
-The Common Name and password MUST Be those or this will not work. 
+The required Common Names and challenge password are expected by the current
+implementation and should not be changed without also updating the code.
 
-This program moves all files into the designated folders. 
+## Manual Certificate Generation
 
-Server machine:
-Commands:
+If the Bash scripts cannot be used, the certificates can also be generated
+manually with OpenSSL.
+
+### Certificate Authority
+
+Generate the CA private key:
+
+    openssl ecparam -name prime256v1 -genkey -noout -out ca.key
+
+Generate the CA certificate:
+
+    openssl req -new -x509 -sha256 -key ca.key -out ca.crt
+
+Recommended CA Common Name:
+
+    CA
+
+### Server Certificate
+
+Generate the server private key:
+
+    openssl ecparam -name prime256v1 -genkey -noout -out server.key
+
+Create the certificate signing request:
+
+    openssl req -new -sha256 -key server.key -out server.csr
+
+Sign the server certificate:
+
+    openssl x509 -req -in server.csr \
+    -CA ca.crt \
+    -CAkey ca.key \
+    -CAcreateserial \
+    -out server.pem \
+    -days 1000 \
+    -sha256 \
+    -extfile server-extensions.txt
+
+The server certificate should use:
+
+    Common Name: Server
+    Challenge Password: cookie
+
+### Client Certificate
+
+Generate the client private key:
+
+    openssl ecparam -name prime256v1 -genkey -noout -out client.key
+
+Create the certificate signing request:
+
+    openssl req -new -sha256 -key client.key -out client.csr
+
+Sign the client certificate:
+
+    openssl x509 -req -in client.csr \
+    -CA ca.crt \
+    -CAkey ca.key \
+    -CAcreateserial \
+    -out client.pem \
+    -days 1000 \
+    -sha256 \
+    -extfile client-extensions.txt
+
+The client certificate should use:
+
+    Common Name: Client
+    Challenge Password: cookie
+
+## Running the Server
+
+Activate the server environment:
+
     cd ~/server
     source bin/activate
-results:
-    (python)username@hostname: 
-Now server is ready! Run code with command:
-    python server.py 
 
-Client machine:
-Commands:
+Start the server:
+
+    python server.py
+
+The server will initialize its directories and users and begin waiting for
+client connections.
+
+## Running the Client
+
+In a separate terminal or Linux system:
+
     cd ~/client
     source bin/activate
-results:
-    (python)username@hostname: 
-Now client is ready! Run code with command:
-    python client.py 
 
-**** For more then one client just run client.bash is a different folder then server or any other client!****
+Start the client:
 
-(I have given you server-extension.txt and client-extensions.txt encase their is an issue and you need to run this is your environment before you execute server or client make sure to not have these their or change the name because I believe that will throw an error from the bash script.
-I have also included server.pem, server.key, server.crt, client.pem, client.key, client.crt, client-extension.txt, and server-extension.txt. Just encase Bash script doesn't work.)
+    python client.py
 
+The client will establish a connection with the server and display the main
+menu.
 
+## Authentication
 
-For testing: 
-Username: Katherine 
-Password: Fish$!NThe3
-Security Questions: 
+The initial client menu provides three primary options:
 
-What year did you graduate from High School: 2019                  
-What was your mothers maiden name: Hager                           
-What was your first cars make and year (Example:HONDA2012): HONDA2012 - your view
+    (L) Login
+    (C) Create Account
+    (E) Exit
 
+Commands accept uppercase, lowercase, and supported full-word versions.
 
-username: admin
-password: admin$et561
+For example:
 
-What year did you graduate from High School: 2000                  
-What was your mothers maiden name: Coffee                           
-What was your first cars make and year (Example:HONDA2012): BMW2015 
+    L
+    l
+    Login
+    login
 
+## Account Creation
 
-Once Server is connected and listening it will say: 
-    Socket was created
+Selecting Create Account allows a user to register a new username.
 
-Once your client is running it will connect with the server and the server will print the clients certificate. 
-The server will print:
-    Inside Katherine(Server) directory!
-    Admin user has been created!
-    Katherine user has been created!
-    Waiting for connection.....
+The server checks whether the username already exists. A new account must use
+a unique username.
 
-The client will print: 
+Passwords must contain:
 
-  _          _          _          _          _
->(')____,  >(')____,  >(')____,  >(')____,  >(') ___,
-  (` =~~/    (` =~~/    (` =~~/    (` =~~/    (` =~~/'
-  ~^~^`---'~^~^~^`---'~^~^~^`---'~^~^~^`---'~^~^~^`---'~^~^~ artist: jgs
+- At least one lowercase letter
+- At least one uppercase letter
+- At least one number
+- At least one special character
+- At least 8 characters
 
-************ WELCOME TO KATHERINE'S SERVER ************
-~~~~~~~~~~~~~~~~ OPTIONS ~~~~~~~~~~~~~~~~
-         (L)Login
-         (C)Create account
-         (E)Exit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Password input is hidden from view.
 
-Inputs can be:
-L, l, Login, login, C, c, Create, create, E, e, Exit, exit
- There are 2 automatically created clients:
-    admin 
-    Katherine 
-    
-Login is selected: L, l. Login,login
-User will get prompted by server:
+After creating a password, the user provides answers to three security
+questions used by the password recovery system.
 
-username: admin 
+## Login and Account Recovery
 
-- press Enter the server will then prompt. 
+Users authenticate with their username and password.
 
-Enter password: admin$et561 - your view will be (***********)
+After repeated unsuccessful login attempts, the Forgot Password option becomes
+available.
 
-- If the password is entered correctly the server will then send the user the log in page.
-- Else if the password is incorrect you wil be prompted 2 more times to enter the correct password. On the third attempt the server will send the user options:
+Password recovery requires the user to correctly answer the security questions
+associated with the account.
 
-************ WELCOME TO KATHERINE'S SERVER ************
-~~~~~~~~~~~~~~~~ OPTIONS ~~~~~~~~~~~~~~~~
-         (L)Login
-         (C)Create account
-         (F)Forgot password
-         (E)Exit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If the answers are correct, the user can create a new password that meets the
+password requirements.
 
+After repeated incorrect security-question attempts, the account is locked as
+a security measure.
 
-Inputs can be:
-L, l, Login, login, C, c, Create, create, F, f, Forgot, forgot E, e, Exit, exit
+## Authenticated User Menu
 
-Forgot password is selected: F, f, Forgot, forgot 
-User is prompted by server: (For admin user)
-Answers are case sensitive:
-    What year did you graduate from High School: 2000                   - your view (****)
-    What was your mothers maiden name: Coffee                           - your view (******)
-    What was your first cars make and year (Example:HONDA2012): BMW2015 - your view (*******)
+After successful authentication, the server provides:
 
-- If the security questions are entered correctly. User will be prompted to create a password with the specific conditions:
-~~~~~~~~~~~~~~~~ PASSWORD MUST CONTAIN ~~~~~~~~~~~~~~~~
-ONE lowercase letter
-ONE uppercase letter
-ONE number (0123456789)
-ONE special character(~!@#$%^&*()_-+=><[{]}|/?)
+    (U) Upload File
+    (D) Download File
+    (A) Account Settings
+    (*) Log Out
 
-Enter Password: ***********
+The application validates commands based on the user's current location in the
+menu system.
 
-- Once the Password is entered it will prompt the user to verify the password.
+For example, login commands cannot be used while already authenticated.
 
-Verify Password: ***********
+## File Operations
 
-- Once it is verified the user is prompted once again, This is also the out come if the user gets the password verification wrong and the password will not be updated for this user.:
-************ WELCOME TO KATHERINE'S SERVER ************
-~~~~~~~~~~~~~~~~ OPTIONS ~~~~~~~~~~~~~~~~
-         (L)Login
-         (C)Create account
-         (E)Exit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Authenticated users can upload and download files through the server.
 
-- Else if the security questions are incorrect you wil be prompted 2 more times to enter the correct password. On the third attempt the server will send the user options:
+The server maintains user-specific directories to separate files belonging to
+different accounts.
 
-************ WELCOME TO KATHERINE'S SERVER ************
-~~~~~~~~~~~~~~~~ OPTIONS ~~~~~~~~~~~~~~~~
-         (L)Login
-         (C)Create account
-         (E)Exit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+All file operations occur through the authenticated client-server connection.
 
-But now admin is locked and unable to be logged in with. Safety feature for if anyone tries to reset the password.
+## Security Design
 
+The project combines several security concepts:
 
+- SSL/TLS encrypted network communication
+- X.509 certificate authentication
+- Elliptic Curve cryptographic keys
+- Locally managed Certificate Authority
+- Password hashing
+- Password complexity enforcement
+- Hidden credential input
+- Account lockout
+- User authentication
+- Password recovery
+- Input validation
+- User-specific file storage
 
-This is the one and only time you will be given this prompt is on logging in and getting the password wrong. 
+## Known Limitations
 
+This project was developed as a learning project and is not intended to be a
+production authentication or file-storage system.
 
-Inputs: C, c, Create, create
+### Multiple Client Connections
 
+The server can accept multiple connections, but additional clients may
+encounter authentication problems related to certificate paths after directory
+changes.
 
-Create client will allow for a user to create a client to login. 
-they will be prompted for a username, which is check to see if it is unique if it is not unique then they will get 2 more attempts to give the server a unique username. If non is given the they will get the prompt:
-************ WELCOME TO KATHERINE'S SERVER ************
-~~~~~~~~~~~~~~~~ OPTIONS ~~~~~~~~~~~~~~~~
-         (L)Login
-         (C)Create account
-         (E)Exit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Certificate path handling should be refactored to support multiple clients
+more reliably.
 
+### Server Connection Handling
 
-If they give a unique username before the this attempt then the user will be told their username was accepted and prompted for a password creation. This password will be hidden form users view with ***** instead of plain text. 
-Server prompt: All these prompts will be (*********) for view
-~~~~~~~~~~~~~~~~ PASSWORD MUST CONTAIN ~~~~~~~~~~~~~~~~
-ONE lowercase letter
-ONE uppercase letter
-ONE number (0123456789)
-ONE special character(~!@#$%^&*()_-+=><[{]}|/?)
-AT LEAST 8 characters in length
+Some client disconnects or server exceptions can require the server to be
+restarted.
 
-- Once password passes the checks the server will prompt the user for: 
-    What year did you graduate from High School:
-    What was your mothers maiden name:
-    What was your first cars make and year (Example:HONDA2012):
+Thread and connection cleanup could be improved to allow the server to recover
+without restarting.
 
-- These take any input (not blank) just make sure you remember it. This will also be kept from users view so as to not expose the plaintext. Once the user can successfully log in to an account they will be prompted with: 
-  _          _          _          _          _
->(')____,  >(')____,  >(')____,  >(')____,  >(') ___,
-  (` =~~/    (` =~~/    (` =~~/    (` =~~/    (` =~~/'
-  ~^~^`---'~^~^~^`---'~^~^~^`---'~^~^~^`---'~^~^~^`---'~^~^~ artist: jgs
+### Account Settings
 
+The Account Settings option is displayed in the authenticated menu but is not
+currently implemented.
 
-~~~~~~~~~~~~~~~~ OPTIONS IN SERVER ~~~~~~~~~~~~~~~~
-           (U)Upload File
-           (D)Download File
-           (A)Account Settings
-           (*)LogOut
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Blank Input
 
-admin: 
+Blank username, password, or security-question input can result in repeated
+input loops.
 
-Input: *
- - If a users prompts * in the prompt it will allow them to Log out of the account and then prompt them with: 
-************ WELCOME TO KATHERINE'S SERVER ************
-~~~~~~~~~~~~~~~~ OPTIONS ~~~~~~~~~~~~~~~~
-         (L)Login
-         (C)Create account
-         (E)Exit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Additional input validation is needed to handle empty input correctly.
 
-!If a User attempts to enter a option that is not in the correct place such as L while logged in they will be told this is not an option. !
+## Future Improvements
 
-Bugs:
-    - Multiple can be accepted by the server but not authenticated so the client will be "connected" but it will cause an error that will not allow it to fully connect to the server due to the servers ca.crt file not being able to be found I think this is due to the change in directories when a user starts moving around the system. 
+- Improve support for simultaneous clients
+- Refactor certificate and file path handling
+- Improve thread cleanup and connection handling
+- Add graceful client disconnects
+- Add stronger exception handling
+- Prevent blank-input loops
+- Complete the Account Settings functionality
+- Add structured security and server logging
+- Add automated tests
+- Improve account recovery
+- Separate configuration values from application code
 
-    - On that same issue If the server has an exception or the user exits incorrectly, or even sometimes correctly  the server will also need to be reset. I believe my threads are the issue there. 
+## What I Learned
 
-    - Not a bug but (A) leads no not an error or an issue just will tell you not an option. 
-    - any blank inputs for password, username, or prompts will lead to never ending loops. so dont do that. 
+This project gave me hands-on experience building a network application where
+networking, programming, authentication, and cryptography all had to work
+together.
 
+I worked with Python socket programming, SSL/TLS, X.509 certificates,
+OpenSSL, Elliptic Curve keys, password hashing, authentication, file handling,
+Linux, Bash, and multithreading.
 
-If te certificates or bash script give any issues I have all the prompts and inputs listed below but also I am giving you the actual certs as well for client and server as long as they are in the same directory as teh codes they should work. 
- 
+Troubleshooting the project also gave me experience working through problems
+involving certificate paths, network connections, authentication state,
+working directories, and multiple client threads.
 
-mkdir ~/project
-virtualenv -p /usr/bin/python3 ~/project
-cd ~/project
-source bin/activate
-pip install --upgrade pip
-pip install --upgrade setuptools
-pip install bcrypt -server needs bcrypt to work 
-pip install maskpass -user need maskpass to work
+## Security Notice
 
+Private cryptographic keys are not included in this repository. They should be
+generated locally using the provided scripts or the OpenSSL commands above.
 
-Commands I used to create certificate authority: 
-openssl ecparam -name prime256v1 -genkey -noout -out ca.key
-openssl req -new -x509 -sha256 -key ca.key -out ca.crt
-
-openssl ecparam -name prime256v1 -genkey -noout -out server.key
-openssl req -new -sha256 -key server.key -out server.csr
-openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.pem -days 1000 -sha256 -extfile server-extensions.txt
-
-Client commands: 
-openssl req -new -sha256 -key client.key -out client.csr
-openssl ecparam -name prime256v1 -genkey -noout -out client.key
-openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.pem -days 1000 -sha256 -extfile client-extensions.txt
-
-Certificate Information: CA
-Country Name: US
-State or Province: VA
-Locality Name: Harrisonburg
-Organization Name: KatherineServerLLC
-Organizational Unit: Security
-Common Name: CA
-Email: your email
-challenge Password: cookie
-company name: Blank
-
-Certificate Information: Server 
-Country Name: US
-State or Province: VA
-Locality Name: Harrisonburg
-Organization Name: KatherineServerLLC
-Organizational Unit: Security
-Common Name: Server
-Email: your email
-challenge Password: cookie
-company name: Blank 
-
-Certificate Information: Client
-Country Name: US
-State or Province: VA
-Locality Name: Harrisonburg
-Organization Name: KatherineServerLLC
-Organizational Unit: Security
-Common Name: Client
-Email: your email
-challenge Password: cookie
-company name: Blank 
-
+This project was created for educational purposes and should not be used as a
+production authentication or file-storage system.
